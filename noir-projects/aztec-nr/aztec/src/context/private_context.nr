@@ -270,6 +270,8 @@ impl PrivateContext {
             let request = unsafe { get_key_validation_request(pk_m_hash, key_index) };
             assert(request.pk_m.hash() == pk_m_hash);
 
+            assert_eq(request.pk_m.hash(), pk_m_hash, "Obtained invalid key validation request");
+
             self.key_validation_requests_and_generators.push(
                 KeyValidationRequestAndGenerator {
                     request,
