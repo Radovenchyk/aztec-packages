@@ -15,7 +15,6 @@ import {
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
 import { type IResource } from '@opentelemetry/resources';
-import { type LoggerProvider } from '@opentelemetry/sdk-logs';
 import {
   ExplicitBucketHistogramAggregation,
   InstrumentType,
@@ -29,7 +28,6 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 import { type TelemetryClientConfig } from './config.js';
 import { EventLoopMonitor } from './event_loop_monitor.js';
 import { linearBuckets } from './histogram_utils.js';
-import { registerOtelLoggerProvider } from './otel_logger_provider.js';
 import { getOtelResource } from './otel_resource.js';
 import { type Gauge, type TelemetryClient } from './telemetry.js';
 
@@ -44,7 +42,6 @@ export class OpenTelemetryClient implements TelemetryClient {
     private resource: IResource,
     private meterProvider: MeterProvider,
     private traceProvider: TracerProvider,
-    private loggerProvider: LoggerProvider,
     private log: Logger,
   ) {}
 
@@ -112,7 +109,6 @@ export class OpenTelemetryClient implements TelemetryClient {
   public async flush() {
     await Promise.all([
       this.meterProvider.forceFlush(),
-      this.loggerProvider.forceFlush(),
       this.traceProvider instanceof NodeTracerProvider ? this.traceProvider.forceFlush() : Promise.resolve(),
     ]);
   }
@@ -127,7 +123,6 @@ export class OpenTelemetryClient implements TelemetryClient {
 
     await Promise.all([
       flushAndShutdown(this.meterProvider),
-      flushAndShutdown(this.loggerProvider),
       this.traceProvider instanceof NodeTracerProvider ? flushAndShutdown(this.traceProvider) : Promise.resolve(),
     ]);
   }
@@ -244,9 +239,9 @@ export class OpenTelemetryClient implements TelemetryClient {
       ],
     });
 
-    const loggerProvider = await registerOtelLoggerProvider(resource, config.logsCollectorUrl);
+    // const loggerProvider = await registerOtelLoggerProvider(resource, config.logsCollectorUrl);
 
-    const service = new OpenTelemetryClient(resource, meterProvider, tracerProvider, loggerProvider, log);
+    const service = new OpenTelemetryClient(resource, meterProvider, tracerProvider, log);
     service.start();
 
     return service;
