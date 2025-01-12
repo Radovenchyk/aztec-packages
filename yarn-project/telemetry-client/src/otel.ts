@@ -1,5 +1,6 @@
 import { type LogData, type Logger, addLogDataHandler } from '@aztec/foundation/log';
 
+import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import {
   DiagConsoleLogger,
   DiagLogLevel,
@@ -11,7 +12,6 @@ import {
   isSpanContextValid,
   trace,
 } from '@opentelemetry/api';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
 import { type IResource } from '@opentelemetry/resources';
@@ -144,14 +144,16 @@ export class OpenTelemetryClient implements TelemetryClient {
     });
 
     tracerProvider.register();
+    // new OTLPMetricExporter({
+    //   url: config.metricsCollectorUrl!.href,
+    // })
+    const exporter = new MetricExporter();
 
     const meterProvider = new MeterProvider({
       resource,
       readers: [
         new PeriodicExportingMetricReader({
-          exporter: new OTLPMetricExporter({
-            url: config.metricsCollectorUrl!.href,
-          }),
+          exporter,
           exportIntervalMillis: config.otelCollectIntervalMs,
           exportTimeoutMillis: config.otelExportTimeoutMs,
         }),

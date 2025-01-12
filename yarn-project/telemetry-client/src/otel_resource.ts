@@ -1,3 +1,4 @@
+import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
 import {
   type IResource,
   detectResourcesSync,
@@ -12,7 +13,7 @@ import { aztecDetector } from './aztec_resource_detector.js';
 export async function getOtelResource(): Promise<IResource> {
   const resource = detectResourcesSync({
     detectors: [osDetectorSync, envDetectorSync, processDetectorSync, serviceInstanceIdDetectorSync, aztecDetector],
-  });
+  }).merge(new GcpDetectorSync().detect());
 
   if (resource.asyncAttributesPending) {
     await resource.waitForAsyncAttributes!();
