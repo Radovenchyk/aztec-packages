@@ -3,8 +3,8 @@
 ///
 /// This is only used during private execution, since in public it is the VM itself that keeps track of return values.
 pub fn pack_returns(returns: [Field]) {
-    // Safety: This oracle call returns nothing: we only call it for its side effects. It is therefore always safe
-    // to call. When unpacking however the caller must check that the returned value is indeed the preimage.
+    /// Safety: This oracle call returns nothing: we only call it for its side effects. It is therefore always safe
+    /// to call. When unpacking however the caller must check that the returned value is indeed the preimage.
     unsafe { pack_returns_oracle_wrapper(returns) };
 }
 
