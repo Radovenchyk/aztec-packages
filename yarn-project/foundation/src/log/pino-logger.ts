@@ -103,7 +103,7 @@ const levelToSeverityFormatter = (label: string, level: number): object => {
 
 const pinoOpts: pino.LoggerOptions<keyof typeof customLevels> = {
   customLevels,
-  messageKey: 'msg',
+  messageKey: 'message',
   useOnlyCustomLevels: false,
   level: logLevel,
   formatters: {
