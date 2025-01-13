@@ -146,7 +146,7 @@ export class OpenTelemetryClient implements TelemetryClient {
     // new OTLPMetricExporter({
     //   url: config.metricsCollectorUrl!.href,
     // })
-    const exporter = new MetricExporter({ prefix: 'aztec' });
+    const exporter = new MetricExporter();
 
     const meterProvider = new MeterProvider({
       resource,
