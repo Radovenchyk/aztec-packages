@@ -1,4 +1,3 @@
-import { createGcpLoggingPinoConfig } from '@google-cloud/pino-logging-gcp-config';
 import { createColors } from 'colorette';
 import isNode from 'detect-node';
 import { pino, symbols } from 'pino';
@@ -102,20 +101,15 @@ const levelToSeverityFormatter = (label: string, level: number): object => {
   return { severity, level };
 };
 
-const pinoOpts = createGcpLoggingPinoConfig(
-  {},
-  {
-    customLevels,
-
-    useOnlyCustomLevels: false,
-    level: logLevel,
-    formatters: {
-      level: levelToSeverityFormatter,
-    },
+const pinoOpts: pino.LoggerOptions<keyof typeof customLevels> = {
+  customLevels,
+  messageKey: 'msg',
+  useOnlyCustomLevels: false,
+  level: logLevel,
+  formatters: {
+    level: levelToSeverityFormatter,
   },
-) as pino.LoggerOptions<keyof typeof customLevels>;
-// need to cast to pino.LoggerOptions<keyof typeof customLevels> because the customLevels
-// don't pass through the `verbose` field in the type inference when using createGcpLoggingPinoConfig.
+};
 
 export const levels = {
   labels: { ...pino.levels.labels, ...Object.fromEntries(Object.entries(customLevels).map(e => e.reverse())) },
