@@ -10,6 +10,7 @@ export interface TelemetryClientConfig {
   otelExportTimeoutMs: number;
   k8sPodUid?: string;
   k8sPodName?: string;
+  k8sNamespaceName?: string;
 }
 
 export const telemetryClientConfigMappings: ConfigMappingsType<TelemetryClientConfig> = {
@@ -57,6 +58,10 @@ export const telemetryClientConfigMappings: ConfigMappingsType<TelemetryClientCo
   k8sPodName: {
     env: 'K8S_POD_NAME',
     description: 'The name of the Kubernetes pod (injected automatically by k8s)',
+  },
+  k8sNamespaceName: {
+    env: 'K8S_NAMESPACE_NAME',
+    description: 'The name of the Kubernetes namespace (injected automatically by k8s)',
   },
 };
 

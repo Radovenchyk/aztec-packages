@@ -202,4 +202,5 @@ export type EnvVar =
   | 'FAUCET_INTERVAL_MS'
   | 'FAUCET_L1_ASSETS'
   | 'K8S_POD_NAME'
-  | 'K8S_POD_UID';
+  | 'K8S_POD_UID'
+  | 'K8S_NAMESPACE_NAME';

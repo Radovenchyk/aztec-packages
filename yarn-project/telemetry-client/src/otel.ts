@@ -1,6 +1,7 @@
 import { type LogData, type Logger, addLogDataHandler } from '@aztec/foundation/log';
 
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
+import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import {
   DiagConsoleLogger,
   DiagLogLevel,
@@ -12,7 +13,6 @@ import {
   isSpanContextValid,
   trace,
 } from '@opentelemetry/api';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
 import { type IResource } from '@opentelemetry/resources';
 import {
@@ -133,16 +133,20 @@ export class OpenTelemetryClient implements TelemetryClient {
     // TODO(palla/log): Should we show traces as logs in stdout when otel collection is disabled?
     const tracerProvider = new NodeTracerProvider({
       resource,
-      spanProcessors: config.tracesCollectorUrl
-        ? [new BatchSpanProcessor(new OTLPTraceExporter({ url: config.tracesCollectorUrl.href }))]
-        : [],
+      spanProcessors: [
+        new BatchSpanProcessor(
+          new TraceExporter({
+            resourceFilter: /.*/,
+          }),
+        ),
+      ],
     });
 
     tracerProvider.register();
     // new OTLPMetricExporter({
     //   url: config.metricsCollectorUrl!.href,
     // })
-    const exporter = new MetricExporter();
+    const exporter = new MetricExporter({ prefix: 'aztec' });
 
     const meterProvider = new MeterProvider({
       resource,
