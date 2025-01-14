@@ -115,6 +115,8 @@ spec:
               value: "{{ .Values.bot.maxErrors }}"
             - name: BOT_STOP_WHEN_UNHEALTHY
               value: "{{ .Values.bot.stopIfUnhealthy }}"
+            - name: USE_GCLOUD_OBSERVABILITY
+              value: "{{ .Values.telemetry.useGcloudObservability }}"
           ports:
             - name: http
               containerPort: {{ .Values.bot.service.nodePort }}

@@ -13,8 +13,11 @@ import {
   isSpanContextValid,
   trace,
 } from '@opentelemetry/api';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HostMetrics } from '@opentelemetry/host-metrics';
 import { type IResource } from '@opentelemetry/resources';
+import { type LoggerProvider } from '@opentelemetry/sdk-logs';
 import {
   ExplicitBucketHistogramAggregation,
   InstrumentType,
@@ -28,6 +31,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 import { type TelemetryClientConfig } from './config.js';
 import { EventLoopMonitor } from './event_loop_monitor.js';
 import { linearBuckets } from './histogram_utils.js';
+import { registerOtelLoggerProvider } from './otel_logger_provider.js';
 import { getOtelResource } from './otel_resource.js';
 import { type Gauge, type TelemetryClient } from './telemetry.js';
 
@@ -42,6 +46,7 @@ export class OpenTelemetryClient implements TelemetryClient {
     private resource: IResource,
     private meterProvider: MeterProvider,
     private traceProvider: TracerProvider,
+    private loggerProvider: LoggerProvider | undefined,
     private log: Logger,
   ) {}
 
@@ -109,6 +114,7 @@ export class OpenTelemetryClient implements TelemetryClient {
   public async flush() {
     await Promise.all([
       this.meterProvider.forceFlush(),
+      this.loggerProvider?.forceFlush(),
       this.traceProvider instanceof NodeTracerProvider ? this.traceProvider.forceFlush() : Promise.resolve(),
     ]);
   }
@@ -116,13 +122,17 @@ export class OpenTelemetryClient implements TelemetryClient {
   public async stop() {
     this.eventLoopMonitor?.stop();
 
-    const flushAndShutdown = async (provider: { forceFlush: () => Promise<void>; shutdown: () => Promise<void> }) => {
+    const flushAndShutdown = async (provider?: { forceFlush: () => Promise<void>; shutdown: () => Promise<void> }) => {
+      if (!provider) {
+        return;
+      }
       await provider.forceFlush();
       await provider.shutdown();
     };
 
     await Promise.all([
       flushAndShutdown(this.meterProvider),
+      flushAndShutdown(this.loggerProvider),
       this.traceProvider instanceof NodeTracerProvider ? flushAndShutdown(this.traceProvider) : Promise.resolve(),
     ]);
   }
@@ -130,33 +140,39 @@ export class OpenTelemetryClient implements TelemetryClient {
   public static async createAndStart(config: TelemetryClientConfig, log: Logger): Promise<OpenTelemetryClient> {
     const resource = await getOtelResource();
 
+    const tracer = config.useGcloudObservability
+      ? new TraceExporter({
+          resourceFilter: /.*/,
+        })
+      : config.tracesCollectorUrl
+      ? new OTLPTraceExporter({ url: config.tracesCollectorUrl.href })
+      : undefined;
+
     // TODO(palla/log): Should we show traces as logs in stdout when otel collection is disabled?
     const tracerProvider = new NodeTracerProvider({
       resource,
-      spanProcessors: [
-        new BatchSpanProcessor(
-          new TraceExporter({
-            resourceFilter: /.*/,
-          }),
-        ),
-      ],
+      spanProcessors: tracer ? [new BatchSpanProcessor(tracer)] : [],
     });
 
     tracerProvider.register();
-    // new OTLPMetricExporter({
-    //   url: config.metricsCollectorUrl!.href,
-    // })
-    const exporter = new MetricExporter();
+
+    const exporter = config.useGcloudObservability
+      ? new MetricExporter()
+      : config.metricsCollectorUrl
+      ? new OTLPMetricExporter({ url: config.metricsCollectorUrl.href })
+      : undefined;
 
     const meterProvider = new MeterProvider({
       resource,
-      readers: [
-        new PeriodicExportingMetricReader({
-          exporter,
-          exportIntervalMillis: config.otelCollectIntervalMs,
-          exportTimeoutMillis: config.otelExportTimeoutMs,
-        }),
-      ],
+      readers: exporter
+        ? [
+            new PeriodicExportingMetricReader({
+              exporter,
+              exportIntervalMillis: config.otelCollectIntervalMs,
+              exportTimeoutMillis: config.otelExportTimeoutMs,
+            }),
+          ]
+        : [],
       views: [
         // Every histogram matching the selector (type + unit) gets these custom buckets assigned
         new View({
@@ -243,9 +259,11 @@ export class OpenTelemetryClient implements TelemetryClient {
       ],
     });
 
-    // const loggerProvider = await registerOtelLoggerProvider(resource, config.logsCollectorUrl);
+    const loggerProvider = config.useGcloudObservability
+      ? undefined
+      : await registerOtelLoggerProvider(resource, config.logsCollectorUrl);
 
-    const service = new OpenTelemetryClient(resource, meterProvider, tracerProvider, log);
+    const service = new OpenTelemetryClient(resource, meterProvider, tracerProvider, loggerProvider, log);
     service.start();
 
     return service;

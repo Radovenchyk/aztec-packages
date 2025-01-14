@@ -100,4 +100,6 @@ spec:
               value: "{{ .Values.proverNode.service.nodePort }}"
             - name: SERVICE_NAME
               value: {{ include "aztec-network.fullname" . }}
+            - name: USE_GCLOUD_OBSERVABILITY
+              value: "{{ .Values.telemetry.useGcloudObservability }}"
 {{ end }}

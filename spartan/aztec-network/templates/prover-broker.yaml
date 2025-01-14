@@ -104,6 +104,8 @@ spec:
               value: "{{ .Values.storage.dataStoreMapSize }}"
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name={{ .Release.Name }},service.namespace={{ .Release.Namespace }},service.version={{ .Chart.AppVersion }},environment={{ .Values.environment | default "production" }}
+            - name: USE_GCLOUD_OBSERVABILITY
+              value: "{{ .Values.telemetry.useGcloudObservability }}"
           resources:
             {{- toYaml .Values.proverBroker.resources | nindent 12 }}
       volumes:

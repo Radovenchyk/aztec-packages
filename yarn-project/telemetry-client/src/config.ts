@@ -1,6 +1,7 @@
 import { type ConfigMappingsType, getConfigFromMappings } from '@aztec/foundation/config';
 
 export interface TelemetryClientConfig {
+  useGcloudObservability: boolean;
   metricsCollectorUrl?: URL;
   tracesCollectorUrl?: URL;
   logsCollectorUrl?: URL;
@@ -14,6 +15,12 @@ export interface TelemetryClientConfig {
 }
 
 export const telemetryClientConfigMappings: ConfigMappingsType<TelemetryClientConfig> = {
+  useGcloudObservability: {
+    env: 'USE_GCLOUD_OBSERVABILITY',
+    description: 'Whether to use GCP observability',
+    defaultValue: false,
+    parseEnv: (val: string) => val === 'true',
+  },
   metricsCollectorUrl: {
     env: 'OTEL_EXPORTER_OTLP_METRICS_ENDPOINT',
     description: 'The URL of the telemetry collector for metrics',

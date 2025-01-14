@@ -101,9 +101,10 @@ const levelToSeverityFormatter = (label: string, level: number): object => {
   return { severity, level };
 };
 
+const useGcloudObservability = process.env.USE_GCLOUD_OBSERVABILITY === 'true';
 const pinoOpts: pino.LoggerOptions<keyof typeof customLevels> = {
   customLevels,
-  messageKey: 'message',
+  messageKey: useGcloudObservability ? 'message' : 'msg',
   useOnlyCustomLevels: false,
   level: logLevel,
   formatters: {

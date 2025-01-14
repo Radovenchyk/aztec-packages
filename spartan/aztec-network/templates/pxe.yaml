@@ -101,6 +101,8 @@ spec:
               value: "{{ .Values.pxe.logLevel }}"
             - name: PXE_PROVER_ENABLED
               value: "{{ .Values.aztec.realProofs }}"
+            - name: USE_GCLOUD_OBSERVABILITY
+              value: "{{ .Values.telemetry.useGcloudObservability }}"
           ports:
             - name: http
               containerPort: {{ .Values.pxe.service.nodePort }}
